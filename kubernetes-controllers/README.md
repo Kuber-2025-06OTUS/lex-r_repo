@@ -7,7 +7,7 @@
 - добавлен манифест `deployment.yaml`, который:
     - создается в `namespace` `homework`
     - запускает 3 экземпляра пода, аналогичных по спецификации из
-    задания [kubernetes-intro](../blob/main/kubernetes-intro/pod.yaml)
+    задания [kubernetes-intro](/kubernetes-intro/pod.yaml)
     - в дополнение к этому поды имеют `readiness пробу`, проверяющую 
     наличие файла `/homework/index.html`
     - имеет стратегию обновления `RollingUpdate`, настроенная так, что в 
