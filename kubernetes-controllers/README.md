@@ -22,7 +22,8 @@
 kubectl apply -f namespace.yaml -f configmap.yaml -f deployment.yaml
 ```
 
-Поды будут находится в статусе `Pending`, т.к. в кластере нет нод с лейблом `homework=true`. Нужно добавить лейбл на любую ноду:
+Поды будут находится в статусе `Pending`, т.к. в кластере нет нод с лейблом `homework=true`.
+Нужно добавить лейбл на любую ноду:
 ```shell
 kubectl label node kind-worker homework=true
 ```
@@ -37,4 +38,10 @@ kubectl -n homework get po
 ```shell
 kubectl -n homework set image deployments web-server nginx-container=nginx:1.28
 kubectl -n homework get po -w
+```
+
+Для проверки работы `readiness пробы` можно удалить файл `/homework/index.html` в каком-нибудь
+поде и увидеть, что проба провалится:
+```shell
+kubectl -n homework exec web-server-7b77d94ddf-f6tf8 -c nginx-container -- bash -c "rm /homework/index.html"
 ```
