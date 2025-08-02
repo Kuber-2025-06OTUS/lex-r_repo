@@ -1,0 +1,47 @@
+replicaCount: 3
+namespace:
+  create: true
+  name: homework
+
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 1
+
+serviceAccount:
+  create: true
+  annotations:
+    kubernetes.io/enforce-mountable-secrets: "true"
+  name: monitoring
+  clusterRoleName: metrics-reader
+  clusterRoleBindingName: read-metrics
+
+webServer:
+  containerName: web-server
+  image:
+    repository: nginx
+    tag: 1.29
+  port:
+    number: 8000
+    name: http
+  readinessProbe:
+    enabled: true
+    spec:
+      httpGet:
+        path: /index.html
+        port: 8000
+      initialDelaySeconds: 1
+      periodSeconds: 5           
+
+initPage:
+  containerName: init-page
+  image:
+    repository: busybox
+    tag: 1.36.1
+
+metricsStorer:
+  containerName: metrics-storer
+  image:
+    repository: alpine/curl
+    tag: 8.1.2

@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}
+  namespace: {{ include "usedNamespace" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  {{- if .Values.updateStrategy }}
+  strategy: {{- toYaml .Values.updateStrategy | nindent 4 }}
+  {{- end }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      serviceAccount: {{ .Values.serviceAccount.name }}
+      initContainers:
+      - name: {{ .Values.initPage.containerName }}
+        image: {{ .Values.initPage.image.repository }}:{{ .Values.initPage.image.tag }}
+        command: ['sh', '-c', 'wget https://www.rancher.com/ -O /init/index.html']
+        volumeMounts:
+        - name: homework-volume
+          mountPath: /init
+      containers:
+      - name: {{ .Values.webServer.containerName }}
+        image: {{ .Values.webServer.image.repository }}:{{ .Values.webServer.image.tag }}
+        ports:
+        - containerPort: {{ .Values.webServer.port.number }}
+          name: {{ .Values.webServer.port.name }}
+        lifecycle:
+          preStop:
+            exec:
+              command: ['sh', '-c', 'rm', '/homework/index.html']
+        volumeMounts:
+        - name: homework-volume
+          mountPath: /homework
+        - name: nginx-config
+          mountPath: /etc/nginx/conf.d
+          readOnly: true
+        {{- if .Values.webServer.readinessProbe.enabled }}
+        readinessProbe: {{- toYaml .Values.webServer.readinessProbe.spec | nindent 10 }}
+        {{- end }}
+      - name: {{ .Values.metricsStorer.containerName }}
+        image: {{ .Values.metricsStorer.image.repository }}:{{ .Values.metricsStorer.image.tag }}
+        volumeMounts:
+        - name: homework-volume
+          mountPath: /homework
+        - name: script-config
+          mountPath: /app
+          readOnly: true
+        command: ['sh', '/app/store-metrics.sh']
+      volumes:
+      - name: homework-volume
+        emptyDir: {}
+      - name: nginx-config
+        configMap:
+          name: config
+          items:
+          - key: default.conf
+            path: default.conf
+      - name: script-config
+        configMap:
+          name: config
+          defaultMode: 0777
+          items:
+          - key: store-metrics.sh
+            path: store-metrics.sh

@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: config
+  namespace: {{ include "usedNamespace" . }}
+data:
+  default.conf: |
+    server {
+      listen       {{ .Values.webServer.port.number }};
+      server_name  localhost;
+      location / {
+          root   /homework;
+          index  index.html index.htm;
+      }
+      error_page   500 502 503 504  /50x.html;
+      location = /50x.html {
+          root   /usr/share/nginx/html;
+      }
+    }
+  store-metrics.sh: |
+    #!/bin/sh
+
+    SA=/var/run/secrets/kubernetes.io/serviceaccount
+    CACERT=${SA}/ca.crt
+    TOKEN=$(cat ${SA}/token)
+
+    while true; do
+      curl --cacert ${CACERT} \
+        --header "Authorization: Bearer ${TOKEN}" \
+        https://$KUBERNETES_SERVICE_HOST/metrics > /homework/metrics.html;
+      sleep 5;
+    done;
